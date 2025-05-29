@@ -4,7 +4,7 @@ import os
 
 app = Flask(__name__)
 
-# Use OpenAI API key from environment variable
+# Set your OpenAI API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.route("/gpt-response", methods=["POST"])
@@ -13,8 +13,9 @@ def gpt_response():
     user_input = data.get("user_input", "")
     caller = data.get("caller", "Unknown caller")
 
+    # Construct the prompt for GPT-4o
     prompt = f"""
-You are a virtual receptionist for a doctor's office. Based on the patient's statement below, respond helpfully and professionally. 
+You are a virtual receptionist for a doctor's office. Based on the patient's statement below, respond helpfully and professionally.
 If they mention pain, bleeding, fever, or other medical concerns, advise them you will transfer to a staff member.
 Patient: "{user_input}"
 """
@@ -40,5 +41,7 @@ Patient: "{user_input}"
 def home():
     return "AI Receptionist Webhook is Live"
 
+# 🔧 This line ensures Flask works on Render
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)
