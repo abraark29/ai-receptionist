@@ -8,9 +8,20 @@ app = Flask(__name__)
 # Load OpenAI API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Debug: confirm key loaded
+print("🔐 OpenAI Key Status:", "✔ Loaded" if openai.api_key else "❌ NOT FOUND")
+
+# Debug: list files in working directory
+print("📂 Project Files:", os.listdir("."))
+
 # Load knowledge base
-with open("knowledge_base.json", "r") as f:
-    kb = json.load(f)
+try:
+    with open("knowledge_base.json", "r") as f:
+        kb = json.load(f)
+    print("📘 Knowledge base loaded successfully.")
+except Exception as e:
+    print("❌ Failed to load knowledge_base.json:", e)
+    kb = {}
 
 @app.route("/", methods=["GET"])
 def home():
@@ -23,30 +34,24 @@ def gpt_response():
     print("📞 User said:", user_input)
 
     if not user_input:
-        print("⚠️ No user_input received from Twilio.")
+        print("⚠️ No user_input received.")
         return jsonify({"response": "I'm sorry, I didn’t catch that. Could you repeat that please?"})
 
     try:
-        # Format knowledge base
         kb_text = "\n".join([f"{q}: {a}" for q, a in kb.items()])
-
-        # GPT system instruction
         system_msg = (
-            "You are a helpful receptionist at a medical and dental office. "
-            "Use only the following knowledge base to answer the caller’s questions. "
-            "If the answer isn't available, say you will connect them to a staff member."
+            "You are a helpful receptionist. Use only the knowledge base below. "
+            "If the answer is not in the knowledge base, say you will connect the caller to a staff member."
         )
 
         prompt = f"""Knowledge Base:
 {kb_text}
 
 Caller said: "{user_input}"
-Respond using only the knowledge base above.
 """
 
         print("🧠 GPT Prompt:\n", prompt)
 
-        # GPT call
         response = openai.ChatCompletion.create(
             model="gpt-4o",
             messages=[
@@ -66,7 +71,7 @@ Respond using only the knowledge base above.
         print("❌ GPT error:", e)
         return jsonify({"response": "Sorry, something went wrong. Let me connect you to a staff member."})
 
-# Proper port binding for Render
+# Render-compatible port binding
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(debug=True, host="0.0.0.0", port=port)
